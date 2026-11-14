@@ -444,20 +444,20 @@
     // 1. ตั้งค่า FIREBASE CONFIGURATION (นำค่าจาก Firebase Console มาวางแทนที่ตรงนี้)
     // =========================================================================
     const firebaseConfig = {
-  apiKey: "AIzaSyCBRQs6_H31g2CIfD40sTOglbV-zgFQijw",
-  authDomain: "student-01-ed9b7.firebaseapp.com",
-  projectId: "student-01-ed9b7",
-  storageBucket: "student-01-ed9b7.firebasestorage.app",
-  messagingSenderId: "712067935448",
-  appId: "1:712067935448:web:a37b19b41e7c6486c9bbad",
-  measurementId: "G-Q3BNPGGGPH"
-};
+      apiKey: "AIzaSyCBRQs6_H31g2CIfD40sTOglbV-zgFQijw",
+      authDomain: "student-01-ed9b7.firebaseapp.com",
+      projectId: "student-01-ed9b7",
+      storageBucket: "student-01-ed9b7.firebasestorage.app",
+      messagingSenderId: "712067935448",
+      appId: "1:712067935448:web:a37b19b41e7c6486c9bbad",
+      measurementId: "G-Q3BNPGGGPH"
+    };
 
     // ตรวจสอบว่าผู้ใช้ตั้งค่า Firebase หรือยัง
-    const isFirebaseConfigured = !firebaseConfig.databaseURL.includes("ใส่_PROJECT_ID");
+    const isFirebaseConfigured = !firebaseConfig.databaseURL?.includes("student-01-ed9b7");
     let db = null;
 
-    if (isFirebaseConfigured) {
+    if (isFirebaseConfigured && typeof firebase !== 'undefined') {
       firebase.initializeApp(firebaseConfig);
       db = firebase.database();
     }
@@ -526,7 +526,6 @@
       appData.announcements = data.announcements ? Object.values(data.announcements).sort((a,b) => b.timestamp - a.timestamp) : [];
       appData.privateChats = data.privateChats || {};
 
-      // ตรวจสอบ Session ล็อกอินบัญชีเดียวแบบ Real-time ข้ามอุปกรณ์
       checkSingleActiveSession();
     }
 
@@ -549,12 +548,10 @@
           if (wasLoggedOut) {
             initAppView();
           } else {
-            // อัปเดตข้อมูลหน้าจอแบบ Real-time เมื่อมีนักเรียนส่งงานหรืออาจารย์ตรวจงาน
             renderMain();
             lucide.createIcons();
           }
         } else if (liveUser && liveUser.lastLoginTime && decoded.loginTime !== liveUser.lastLoginTime) {
-          // ถูกบังคับออกจากระบบเพราะมีการล็อกอินจากเครื่องอื่น
           localStorage.removeItem(ACTIVE_SESSION_KEY);
           currentUser = null;
           initAppView();
@@ -569,17 +566,16 @@
       const statusDot = document.getElementById('db-status-dot');
       const statusText = document.getElementById('db-status-text');
 
-      if (!isFirebaseConfigured) {
+      if (!isFirebaseConfigured || !db) {
         loader.classList.add('hidden');
         statusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
-        statusText.textContent = 'โหมดออฟไลน์ (ยังไม่ได้ใส่ค่า Firebase Config)';
+        statusText.textContent = 'โหมดออฟไลน์ (ยังไม่ได้เชื่อมต่อ Firebase)';
         const localSaved = localStorage.getItem(LOCAL_FALLBACK_KEY);
         parseFirebaseSnapshot(localSaved ? JSON.parse(localSaved) : defaultInitialData);
         initAppView();
         return;
       }
 
-      // ฟังการเปลี่ยนแปลงข้อมูลแบบ Real-time จาก Firebase
       db.ref('tasktrack_data').on('value', (snapshot) => {
         loader.classList.add('hidden');
         statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
@@ -599,12 +595,10 @@
       });
     }
 
-    // บันทึกข้อมูลขึ้น Firebase (หรือ LocalStorage หากยังไม่ตั้งค่า)
     function saveToCloud(path, data) {
       if (isFirebaseConfigured && db) {
         return db.ref(`tasktrack_data/${path}`).set(data);
       } else {
-        // Fallback Local
         const raw = JSON.parse(localStorage.getItem(LOCAL_FALLBACK_KEY) || JSON.stringify(defaultInitialData));
         const keys = path.split('/');
         let curr = raw;
@@ -679,7 +673,6 @@
       return new Date() > deadline;
     }
 
-    // ==================== AUTHENTICATION LOGIC ====================
     function switchAuthMode(mode) {
       authMode = mode;
       const loginForm = document.getElementById('login-form');
@@ -796,7 +789,6 @@
       showToast('ออกจากระบบเรียบร้อยแล้ว');
     }
 
-    // ==================== VIEW INITIALIZATION ====================
     function initAppView() {
       const authScreen = document.getElementById('auth-screen');
       const mainApp = document.getElementById('main-app');
@@ -907,7 +899,6 @@
       }).join('');
     }
 
-    // ==================== STUDENT VIEWS ====================
     function getStudentSubmission(assignmentId, studentUsername) {
       const targetUser = studentUsername || currentUser.username;
       return appData.submissions.find(s => s.assignmentId === assignmentId && s.studentUsername === targetUser);
@@ -1191,7 +1182,6 @@
       `;
     }
 
-    // ==================== ANNOUNCEMENTS VIEW ====================
     function renderAnnouncementsView() {
       const isAdmin = currentUser.role === 'admin';
       const effectiveRole = isAdmin ? adminViewMode : currentUser.role;
@@ -1268,7 +1258,6 @@
       `;
     }
 
-    // ==================== PRIVATE CHAT VIEW ====================
     function renderChatView() {
       const isAdmin = currentUser.role === 'admin';
       const effectiveRole = isAdmin ? adminViewMode : currentUser.role;
@@ -1418,7 +1407,6 @@
       if (box) box.scrollTop = box.scrollHeight;
     }
 
-    // ==================== TEACHER VIEWS ====================
     function renderTeacherDashboard() {
       const students = appData.users.filter(u => u.role === 'student');
       const totalExpected = appData.assignments.length * students.length;
@@ -1635,7 +1623,7 @@
       const filtered = allStudents.filter(s =>
         s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
         s.username.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-        (s.room && s.room.toLowerCase().includes(studentSearchQuery.toLowerCase()))
+        ((s.room || '').toLowerCase().includes(studentSearchQuery.toLowerCase()))
       );
 
       return `
@@ -1673,7 +1661,7 @@
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 border-b border-slate-100 dark:border-slate-800 last:border-none">
                       <td class="py-3.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300">${stu.username}</td>
                       <td class="py-3.5 px-4 text-sm font-medium text-slate-800 dark:text-white">${stu.name}</td>
-                      <td class="py-3.5 px-4 text-xs text-center text-slate-600 dark:text-slate-400">${stu.room} / เลขที่ ${stu.number}</td>
+                      <td class="py-3.5 px-4 text-xs text-center text-slate-600 dark:text-slate-400">${stu.room || '-'} / เลขที่ ${stu.number || '-'}</td>
                       <td class="py-3.5 px-4 text-xs text-center">
                         <span class="px-2.5 py-1 rounded-full bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 font-medium">${subCount} / ${appData.assignments.length} งาน</span>
                       </td>
@@ -1833,7 +1821,7 @@
                       <td class="border border-slate-300 py-2 px-3 text-center">${idx + 1}</td>
                       <td class="border border-slate-300 py-2 px-3">${stu.username}</td>
                       <td class="border border-slate-300 py-2 px-3 font-medium">${stu.name}</td>
-                      <td class="border border-slate-300 py-2 px-3 text-center">${stu.room} / ${stu.number}</td>
+                      <td class="border border-slate-300 py-2 px-3 text-center">${stu.room || '-'} / ${stu.number || '-'}</td>
                       <td class="border border-slate-300 py-2 px-3 text-center">${stuSubs.length} / ${appData.assignments.length}</td>
                       <td class="border border-slate-300 py-2 px-3 text-center font-semibold">${earned}</td>
                     </tr>
@@ -1871,7 +1859,6 @@
       }
     }
 
-    // Interactive Handlers
     function openSubmitModal(asgId) {
       const asg = appData.assignments.find(a => a.id === asgId);
       const overdue = isAssignmentOverdue(asg);
