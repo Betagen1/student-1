@@ -169,19 +169,19 @@
             <span>เข้าสู่ระบบ</span>
           </button>
           <p class="text-center text-xs text-slate-400 pt-1">
-            ยังไม่มีบัญชีนักเรียน? <button type="button" onclick="switchAuthMode('register')" class="text-sky-600 dark:text-sky-400 font-semibold hover:underline">คลิกเพื่อลงทะเบียน</button>
+            ยังไม่มีบัญชีผู้ใช้งาน? <button type="button" onclick="switchAuthMode('register')" class="text-sky-600 dark:text-sky-400 font-semibold hover:underline">คลิกเพื่อลงทะเบียน</button>
           </p>
         </form>
 
-        <!-- Register Form -->
+        <!-- Register Form (รองรับทั้งนักเรียนและอาจารย์ พร้อมระบุสาขาวิชา) -->
         <form id="register-form" onsubmit="handleRegister(event)" class="hidden space-y-3.5">
-          <div class="text-xs text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-900 px-3.5 py-2.5 rounded-xl">
-            * ลงทะเบียนบัญชี <strong>นักเรียนใหม่</strong> (ซิงค์เข้าฐานข้อมูลออนไลน์ทันที)
+          <div id="reg-banner" class="text-xs text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-900 px-3.5 py-2.5 rounded-xl">
+            * ลงทะเบียนบัญชีผู้ใช้งานใหม่ (ซิงค์เข้าฐานข้อมูลออนไลน์ทันที)
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">รหัสนักเรียน *</label>
-              <input type="text" id="reg-username" required placeholder="เช่น 6901001" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+              <label id="reg-id-label" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">รหัสนักเรียน / Username *</label>
+              <input type="text" id="reg-username" required placeholder="เช่น 6901001 หรือ teacher_somchai" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">รหัสผ่าน *</label>
@@ -189,19 +189,24 @@
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">ชื่อ - นามสกุล *</label>
-            <input type="text" id="reg-fullname" required placeholder="เช่น นายธนกฤต รักเรียน" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+            <label id="reg-name-label" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">ชื่อ - นามสกุล *</label>
+            <input type="text" id="reg-fullname" required placeholder="เช่น ดร.สมชาย ใจดี" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
           </div>
-          <div class="grid grid-cols-2 gap-3.5">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">ชั้นเรียน / ห้อง *</label>
-              <input type="text" id="reg-room" placeholder="เช่น ม.5/2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">เลขที่ *</label>
-              <input type="number" id="reg-number" placeholder="เช่น 1" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+
+          <!-- ฟิลด์เพิ่มเติมเฉพาะบทบาท (นักเรียน หรือ อาจารย์) -->
+          <div id="reg-extra-fields">
+            <div class="grid grid-cols-2 gap-3.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">ชั้นเรียน / ห้อง *</label>
+                <input type="text" id="reg-room" placeholder="เช่น ม.5/2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">เลขที่ *</label>
+                <input type="number" id="reg-number" placeholder="เช่น 1" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+              </div>
             </div>
           </div>
+
           <div id="reg-error" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-xl"></div>
           <button type="submit" class="w-full py-3 rounded-xl gradient-brand text-white font-semibold text-sm shadow-md shadow-sky-500/20 hover:opacity-95 transition-all flex items-center justify-center gap-2">
             <i data-lucide="user-plus" class="w-4 h-4"></i>
@@ -454,7 +459,7 @@
       measurementId: "G-Q3BNPGGGPH"
     };
 
-    // ตรวจสอบว่าผู้ใช้ตั้งค่า Firebase หรือยัง
+    // ตรวจสอบการตั้งค่า Firebase
     const isFirebaseConfigured = !firebaseConfig.databaseURL?.includes("student-01-ed9b7");
     let db = null;
 
@@ -467,10 +472,10 @@
     const LOCAL_FALLBACK_KEY = 'tasktrack_cloud_fallback_v1';
     const ACTIVE_SESSION_KEY = 'tasktrack_active_session_token';
 
+    // โครงสร้างฐานข้อมูลใหม่ (ล้างข้อมูล User เก่าทั้งหมด เหลือเฉพาะ Admin เริ่มต้น)
     const defaultInitialData = {
       users: {
-        admin: { username: 'admin', password: '1234', role: 'admin', name: 'ผู้ดูแลระบบสูงสุด', subject: 'ทุกรายวิชา' },
-        teacher1: { username: 'teacher1', password: '1234', role: 'teacher', name: 'อาจารย์สมชาย ใจดี', subject: 'วิทยาการคำนวณ' }
+        admin: { username: 'admin', password: '1234', role: 'admin', name: 'ผู้ดูแลระบบสูงสุด', subject: 'ทุกรายวิชา' }
       },
       assignments: {},
       submissions: {},
@@ -513,7 +518,6 @@
       }
     }
 
-    // แปลง Object จาก Firebase ให้เป็น Array เพื่อใช้งานกับ UI เดิมได้อย่างราบรื่น
     function parseFirebaseSnapshot(val) {
       const data = val || defaultInitialData;
       const usersObj = data.users || defaultInitialData.users;
@@ -530,6 +534,7 @@
       checkSingleActiveSession();
     }
 
+    // ระบบความปลอดภัย: ป้องกันการล็อกอินซ้ำข้ามเครื่อง (Single Active Session)
     function checkSingleActiveSession() {
       const token = localStorage.getItem(ACTIVE_SESSION_KEY);
       if (!token) {
@@ -556,12 +561,11 @@
           localStorage.removeItem(ACTIVE_SESSION_KEY);
           currentUser = null;
           initAppView();
-          alert('บัญชีของคุณถูกเข้าสู่ระบบจากอุปกรณ์อื่น ระบบได้ออกจากระบบเครื่องนี้โดยอัตโนมัติ');
+          alert('บัญชีของคุณถูกเข้าสู่ระบบจากอุปกรณ์อื่น ระบบได้ออกจากระบบเครื่องนี้โดยอัตโนมัติเพื่อความปลอดภัย');
         }
       } catch (e) {}
     }
 
-    // เริ่มต้นเชื่อมต่อฐานข้อมูล
     function initDatabaseConnection() {
       const loader = document.getElementById('db-loading');
       const statusDot = document.getElementById('db-status-dot');
@@ -591,7 +595,7 @@
       }, (error) => {
         loader.classList.add('hidden');
         statusDot.className = 'w-2 h-2 rounded-full bg-rose-500';
-        statusText.textContent = 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบ Config';
+        statusText.textContent = 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ';
         console.error(error);
       });
     }
@@ -698,8 +702,8 @@
         regForm.classList.remove('hidden');
         tabReg.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm transition-all';
         tabLogin.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 transition-all';
-        heading.textContent = 'ลงทะเบียนนักเรียนใหม่';
-        subheading.textContent = 'สร้างบัญชีผู้ใช้งานเพื่อเริ่มต้นส่งงาน';
+        heading.textContent = authRole === 'teacher' ? 'ลงทะเบียนอาจารย์ผู้สอน' : 'ลงทะเบียนนักเรียนใหม่';
+        subheading.textContent = 'สร้างบัญชีผู้ใช้งานเพื่อเริ่มต้นใช้งานระบบ';
       }
       selectAuthRole(authRole);
     }
@@ -711,6 +715,9 @@
       const btnAdmin = document.getElementById('auth-role-admin');
       const loginLabel = document.getElementById('login-id-label');
       const tabReg = document.getElementById('tab-mode-register');
+      const extraFields = document.getElementById('reg-extra-fields');
+      const regIdLabel = document.getElementById('reg-id-label');
+      const regNameLabel = document.getElementById('reg-name-label');
 
       btnStudent.className = 'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm transition-all';
       btnTeacher.className = 'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm transition-all';
@@ -721,12 +728,34 @@
         loginLabel.textContent = 'รหัสนักเรียน';
         document.getElementById('login-username').placeholder = 'กรอกรหัสนักเรียน';
         tabReg.parentElement.style.display = 'flex';
+        regIdLabel.textContent = 'รหัสนักเรียน / Username *';
+        regNameLabel.textContent = 'ชื่อ - นามสกุล *';
+        extraFields.innerHTML = `
+          <div class="grid grid-cols-2 gap-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">ชั้นเรียน / ห้อง *</label>
+              <input type="text" id="reg-room" placeholder="เช่น ม.5/2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">เลขที่ *</label>
+              <input type="number" id="reg-number" placeholder="เช่น 1" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+            </div>
+          </div>
+        `;
       } else if (role === 'teacher') {
         btnTeacher.className = 'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 rounded-2xl border-2 border-teal-500 bg-teal-50/70 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 font-semibold text-xs sm:text-sm transition-all';
         loginLabel.textContent = 'ชื่อผู้ใช้อาจารย์ (Username)';
         document.getElementById('login-username').placeholder = 'กรอกชื่อผู้ใช้อาจารย์';
-        tabReg.parentElement.style.display = 'none';
-        if (authMode === 'register') switchAuthMode('login');
+        tabReg.parentElement.style.display = 'flex';
+        regIdLabel.textContent = 'ชื่อผู้ใช้อาจารย์ (Username) *';
+        regNameLabel.textContent = 'ชื่อ - นามสกุล อาจารย์ *';
+        // เพิ่มฟิลด์ระบุสาขาวิชาตามที่ต้องการ
+        extraFields.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">สาขาวิชา / ภาควิชา *</label>
+            <input type="text" id="reg-subject" placeholder="เช่น สาขาวิชาวิทยาการคอมพิวเตอร์ / เทคโนโลยีสารสนเทศ" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-sky-500" />
+          </div>
+        `;
       } else {
         btnAdmin.className = 'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 rounded-2xl border-2 border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold text-xs sm:text-sm transition-all';
         loginLabel.textContent = 'ชื่อผู้ดูแลระบบ (Admin Username)';
@@ -763,22 +792,44 @@
       const username = document.getElementById('reg-username').value.trim().replace(/[.#$\[\]]/g, '_');
       const password = document.getElementById('reg-password').value.trim();
       const name = document.getElementById('reg-fullname').value.trim();
-      const room = document.getElementById('reg-room').value.trim() || 'ม.5/1';
-      const number = parseInt(document.getElementById('reg-number').value) || 1;
       const errBox = document.getElementById('reg-error');
 
       if (appData.users.some(u => u.username === username)) {
-        errBox.textContent = 'รหัสนักเรียนนี้มีอยู่ในระบบแล้ว';
+        errBox.textContent = 'ชื่อผู้ใช้งาน (Username) นี้มีอยู่ในระบบแล้ว';
         errBox.classList.remove('hidden');
         return;
       }
 
-      let newUser = { username, password, role: 'student', name, room, number, lastLoginTime: Date.now() };
+      let newUser = {};
+      if (authRole === 'teacher') {
+        const subject = document.getElementById('reg-subject').value.trim() || 'วิทยาการคอมพิวเตอร์';
+        newUser = {
+          username,
+          password,
+          role: 'teacher',
+          name,
+          subject,
+          lastLoginTime: Date.now()
+        };
+      } else {
+        const room = document.getElementById('reg-room').value.trim() || 'ม.5/1';
+        const number = parseInt(document.getElementById('reg-number').value) || 1;
+        newUser = {
+          username,
+          password,
+          role: 'student',
+          name,
+          room,
+          number,
+          lastLoginTime: Date.now()
+        };
+      }
+
       saveToCloud(`users/${username}`, newUser).then(() => {
         saveSessionUser(newUser);
         currentTab = 'dashboard';
         initAppView();
-        showToast('ลงทะเบียนและบันทึกขึ้นฐานข้อมูลสำเร็จ');
+        showToast('ลงทะเบียนบัญชีสำเร็จเรียบร้อย');
       });
     }
 
@@ -805,8 +856,6 @@
       mainApp.classList.remove('hidden');
 
       const isAdmin = currentUser.role === 'admin';
-      const effectiveRole = isAdmin ? adminViewMode : currentUser.role;
-
       const adminSwitcher = document.getElementById('admin-view-switcher-container');
       if (isAdmin) {
         adminSwitcher.style.display = 'flex';
@@ -820,7 +869,7 @@
         roleBadge.textContent = `Admin (${adminViewMode === 'student' ? 'มุมมองนักเรียน' : 'มุมมองอาจารย์'})`;
         roleBadge.className = 'text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300';
       } else {
-        roleBadge.textContent = currentUser.role === 'student' ? 'นักเรียน' : 'อาจารย์ผู้สอน';
+        roleBadge.textContent = currentUser.role === 'student' ? 'นักเรียน' : `อาจารย์ (${currentUser.subject || 'ผู้สอน'})`;
         roleBadge.className = currentUser.role === 'student'
           ? 'text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border border-sky-200'
           : 'text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border border-teal-200';
@@ -834,7 +883,7 @@
       document.getElementById('profile-name').textContent = currentUser.name;
       document.getElementById('profile-sub').textContent = isAdmin
         ? `สิทธิ์ Admin • กำลังดูแบบ ${adminViewMode === 'student' ? 'นักเรียน' : 'อาจารย์'}`
-        : (currentUser.role === 'student' ? `รหัส: ${currentUser.username} | ${currentUser.room}` : `อาจารย์ผู้สอน`);
+        : (currentUser.role === 'student' ? `รหัส: ${currentUser.username} | ${currentUser.room}` : `สาขา: ${currentUser.subject}`);
 
       const students = appData.users.filter(u => u.role === 'student');
       if (students.length > 0 && !students.some(s => s.username === selectedChatStudent)) {
@@ -877,7 +926,7 @@
         { id: 'dashboard', label: 'ภาพรวมการตรวจงาน', icon: 'bar-chart-3' },
         { id: 'manage-assignments', label: 'จัดการงาน / แนบใบงาน', icon: 'folder-cog' },
         { id: 'grading', label: 'ตรวจงานและดาวน์โหลด', icon: 'check-square' },
-        { id: 'students', label: 'รายชื่อนักเรียน (50+)', icon: 'users' },
+        { id: 'students', label: 'รายชื่อนักเรียน', icon: 'users' },
         { id: 'announcements', label: 'จัดการประกาศ', icon: 'megaphone' },
         { id: 'chat', label: 'แชตกับนักเรียน', icon: 'message-circle' },
         { id: 'report', label: 'รายงานสรุปผล', icon: 'printer' },
