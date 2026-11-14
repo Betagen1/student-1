@@ -12,6 +12,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Firebase SDK (Realtime Database) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -70,6 +73,12 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 antialiased selection:bg-sky-100 selection:text-sky-800 transition-colors duration-200">
 
+  <!-- Loading Overlay ขณะเชื่อมต่อฐานข้อมูล -->
+  <div id="db-loading" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center text-white">
+    <div class="w-10 h-10 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+    <p class="text-sm font-medium">กำลังเชื่อมต่อฐานข้อมูลออนไลน์...</p>
+  </div>
+
   <!-- ==================== 1. AUTHENTICATION SCREEN ==================== -->
   <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-sky-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
     <div class="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
@@ -83,23 +92,26 @@
           <div class="flex items-center gap-3 mb-6">
             <div class="w-12 h-12 rounded-2xl bg-white/25 backdrop-blur-sm flex items-center justify-center font-bold text-2xl shadow-inner overflow-hidden shrink-0">
               <img src="logo.png" alt="Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-              <span class="hidden w-full h-full items-center justify-center">T</span>
+              <span class="hidden w-full h-full items-center justify-center">S</span>
             </div>
             <div>
               <h1 class="font-bold text-xl leading-tight">Student</h1>
-              <p class="text-xs text-sky-100">ระบบส่งงานออนไลน์</p>
+              <p class="text-xs text-sky-100">ระบบส่งงานออนไลน์ (Cloud Sync)</p>
             </div>
           </div>
           
-          <h2 class="text-xl sm:text-2xl font-bold leading-snug mb-3">ระบบส่งงานที่มีความปลอดภัยสูง รองรับนักเรียนกว่า 50 คน</h2>
+          <h2 class="text-xl sm:text-2xl font-bold leading-snug mb-3">เชื่อมต่อฐานข้อมูลออนไลน์ ซิงค์ทุกอุปกรณ์แบบเรียลไทม์</h2>
           <p class="text-xs sm:text-sm text-sky-50/90 leading-relaxed">
-            ระบบล็อกอินบัญชีเดียว ป้องกันการใช้งานซ้ำ รองรับโหมดมืด (Dark Mode) และแยกหมวดหมู่รายวิชาและวันที่อย่างเป็นระบบ
+            ระบบล็อกอินบัญชีเดียว ป้องกันการใช้งานซ้ำข้ามเครื่อง รองรับโหมดมืด (Dark Mode) และรองรับนักเรียนพร้อมกันกว่า 50 คน
           </p>
         </div>
 
         <div class="relative z-10 mt-6 bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-          <p class="text-[11px] font-semibold uppercase tracking-wider text-sky-100 mb-1">ความปลอดภัยขั้นสูง</p>
-          <p class="text-xs text-white/90">ระบบจำกัดการล็อกอินซ้ำ และตรวจสอบความถูกต้องของ Session แบบเรียลไทม์</p>
+          <div class="flex items-center gap-2 mb-1">
+            <span id="db-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <p id="db-status-text" class="text-[11px] font-semibold uppercase tracking-wider text-sky-100">กำลังตรวจสอบฐานข้อมูล</p>
+          </div>
+          <p class="text-xs text-white/90">ข้อมูลการส่งงานและคะแนนจะถูกบันทึกบน Cloud อัตโนมัติ</p>
         </div>
       </div>
 
@@ -164,7 +176,7 @@
         <!-- Register Form -->
         <form id="register-form" onsubmit="handleRegister(event)" class="hidden space-y-3.5">
           <div class="text-xs text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-900 px-3.5 py-2.5 rounded-xl">
-            * ลงทะเบียนบัญชี <strong>นักเรียนใหม่</strong> (รองรับนักเรียนกว่า 50 คน)
+            * ลงทะเบียนบัญชี <strong>นักเรียนใหม่</strong> (ซิงค์เข้าฐานข้อมูลออนไลน์ทันที)
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
@@ -209,7 +221,7 @@
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center text-white font-bold text-xl shadow-md shadow-sky-500/20 overflow-hidden shrink-0">
             <img src="logo.png" alt="Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <span class="hidden w-full h-full items-center justify-center">T</span>
+            <span class="hidden w-full h-full items-center justify-center">S</span>
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -218,7 +230,7 @@
                 นักเรียน
               </span>
             </div>
-            <p class="text-[11px] text-slate-400 hidden sm:block">ระบบส่งงานนักเรียนออนไลน์ (รองรับกว่า 50 คน)</p>
+            <p class="text-[11px] text-slate-400 hidden sm:block">ระบบส่งงานออนไลน์ (Cloud Sync)</p>
           </div>
         </div>
 
@@ -233,7 +245,6 @@
 
         <!-- User Controls & Theme Toggle -->
         <div class="flex items-center gap-2 sm:gap-3">
-          <!-- Theme Toggle Button -->
           <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="สลับโหมดสว่าง/มืด">
             <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
             <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
@@ -276,7 +287,7 @@
               <p id="profile-sub" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate px-2">-</p>
               <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium border border-emerald-100 dark:border-emerald-900">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>ออนไลน์ (เซสชันปลอดภัย)</span>
+                <span>Cloud Sync ออนไลน์</span>
               </div>
             </div>
           </div>
@@ -289,11 +300,11 @@
           <!-- Help / Info Card -->
           <div class="gradient-brand rounded-2xl p-4 text-white shadow-md shadow-sky-500/15">
             <div class="flex items-center gap-2 font-semibold text-sm mb-1">
-              <i data-lucide="shield-check" class="w-4 h-4"></i>
-              <span>ระบบความปลอดภัยขั้นสูง</span>
+              <i data-lucide="cloud" class="w-4 h-4"></i>
+              <span>ฐานข้อมูลออนไลน์</span>
             </div>
             <p class="text-xs text-sky-50 leading-relaxed opacity-90">
-              ล็อกอินบัญชีเดียว ป้องกันการใช้งานซ้ำ รองรับนักเรียนกว่า 50 คนได้อย่างมีเสถียรภาพ
+              ข้อมูลทุกอย่างถูกบันทึกออนไลน์แบบเรียลไทม์ อาจารย์และนักเรียนเห็นข้อมูลตรงกันทันที
             </p>
           </div>
         </aside>
@@ -339,7 +350,7 @@
             <label for="submit-file" class="cursor-pointer flex flex-col items-center">
               <i data-lucide="file-up" class="w-7 h-7 text-sky-500 mb-1"></i>
               <span id="file-label" class="text-xs font-medium text-slate-700 dark:text-slate-300">คลิกเพื่อเลือกไฟล์จากเครื่อง</span>
-              <span class="text-[11px] text-slate-400 mt-0.5">รองรับขนาดไม่เกิน 3 MB</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">ขนาดไม่เกิน 1.5 MB (ไฟล์ใหญ่แนะนำฝาก Google Drive แล้วแนบลิงก์)</span>
             </label>
           </div>
         </div>
@@ -407,7 +418,7 @@
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">ข้อเสนอแนะ (Feedback ถึงนักเรียน)</label>
-          <textarea id="grade-feedback-input" rows="3" required placeholder="พิมพ์คำแนะนำหรือคำชมเชย..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-sm focus:outline-none focus:border-teal-500"></textarea>
+          <textarea id="grade-feedback-input" rows="3" required placeholder="พิมพ์คำแนะนำหรือคำชมเชย..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:border-teal-500"></textarea>
         </div>
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" onclick="closeModal('grade-modal')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">ยกเลิก</button>
@@ -429,23 +440,52 @@
   </div>
 
   <script>
+    // =========================================================================
+    // 1. ตั้งค่า FIREBASE CONFIGURATION (นำค่าจาก Firebase Console มาวางแทนที่ตรงนี้)
+    // =========================================================================
+    const firebaseConfig = {
+  apiKey: "AIzaSyCBRQs6_H31g2CIfD40sTOglbV-zgFQijw",
+  authDomain: "student-01-ed9b7.firebaseapp.com",
+  projectId: "student-01-ed9b7",
+  storageBucket: "student-01-ed9b7.firebasestorage.app",
+  messagingSenderId: "712067935448",
+  appId: "1:712067935448:web:a37b19b41e7c6486c9bbad",
+  measurementId: "G-Q3BNPGGGPH"
+};
+
+    // ตรวจสอบว่าผู้ใช้ตั้งค่า Firebase หรือยัง
+    const isFirebaseConfigured = !firebaseConfig.databaseURL.includes("ใส่_PROJECT_ID");
+    let db = null;
+
+    if (isFirebaseConfigured) {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    }
+
     // ==================== STATE & STORAGE ====================
-    const STORAGE_KEY = 'tasktrack_secure_prod_v2';
+    const LOCAL_FALLBACK_KEY = 'tasktrack_cloud_fallback_v1';
     const ACTIVE_SESSION_KEY = 'tasktrack_active_session_token';
 
     const defaultInitialData = {
-      users: [
-        { username: 'admin', password: '1234', role: 'admin', name: 'ผู้ดูแลระบบสูงสุด', subject: 'ทุกรายวิชา' },
-        { username: 'teacher1', password: '1234', role: 'teacher', name: 'อาจารย์สมชาย ใจดี', subject: 'วิทยาการคำนวณ' }
-      ],
+      users: {
+        admin: { username: 'admin', password: '1234', role: 'admin', name: 'ผู้ดูแลระบบสูงสุด', subject: 'ทุกรายวิชา' },
+        teacher1: { username: 'teacher1', password: '1234', role: 'teacher', name: 'อาจารย์สมชาย ใจดี', subject: 'วิทยาการคำนวณ' }
+      },
+      assignments: {},
+      submissions: {},
+      announcements: {},
+      privateChats: {}
+    };
+
+    let appData = {
+      users: [],
       assignments: [],
       submissions: [],
       announcements: [],
       privateChats: {}
     };
 
-    let appData = loadData();
-    let currentUser = loadSessionUser();
+    let currentUser = null;
     let authMode = 'login';
     let authRole = 'student';
     let currentTab = 'dashboard';
@@ -472,41 +512,129 @@
       }
     }
 
-    function loadData() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (!parsed.users.some(u => u.role === 'admin')) {
-            parsed.users.push({ username: 'admin', password: '1234', role: 'admin', name: 'ผู้ดูแลระบบสูงสุด', subject: 'ทุกรายวิชา' });
-          }
-          return parsed;
-        } catch (e) {}
+    // แปลง Object จาก Firebase ให้เป็น Array เพื่อใช้งานกับ UI เดิมได้อย่างราบรื่น
+    function parseFirebaseSnapshot(val) {
+      const data = val || defaultInitialData;
+      const usersObj = data.users || defaultInitialData.users;
+      if (!usersObj.admin) {
+        usersObj.admin = defaultInitialData.users.admin;
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultInitialData));
-      return JSON.parse(JSON.stringify(defaultInitialData));
+
+      appData.users = Object.values(usersObj);
+      appData.assignments = data.assignments ? Object.values(data.assignments) : [];
+      appData.submissions = data.submissions ? Object.values(data.submissions) : [];
+      appData.announcements = data.announcements ? Object.values(data.announcements).sort((a,b) => b.timestamp - a.timestamp) : [];
+      appData.privateChats = data.privateChats || {};
+
+      // ตรวจสอบ Session ล็อกอินบัญชีเดียวแบบ Real-time ข้ามอุปกรณ์
+      checkSingleActiveSession();
     }
 
-    function saveData() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      } catch (e) {
-        alert('พื้นที่จัดเก็บข้อมูลเต็ม (แนะนำแนบไฟล์ขนาดไม่เกิน 3 MB)');
-      }
-    }
-
-    // ระบบความปลอดภัย: ตรวจสอบ Session ล็อกอินบัญชีเดียว (Single Active Session)
-    function loadSessionUser() {
+    function checkSingleActiveSession() {
       const token = localStorage.getItem(ACTIVE_SESSION_KEY);
-      if (!token) return null;
+      if (!token) {
+        if (currentUser) {
+          currentUser = null;
+          initAppView();
+        }
+        return;
+      }
+
       try {
         const decoded = JSON.parse(atob(token));
-        const user = appData.users.find(u => u.username === decoded.username);
-        if (user && decoded.loginTime === user.lastLoginTime) {
-          return user;
+        const liveUser = appData.users.find(u => u.username === decoded.username);
+        if (liveUser && decoded.loginTime === liveUser.lastLoginTime) {
+          const wasLoggedOut = !currentUser;
+          currentUser = liveUser;
+          if (wasLoggedOut) {
+            initAppView();
+          } else {
+            // อัปเดตข้อมูลหน้าจอแบบ Real-time เมื่อมีนักเรียนส่งงานหรืออาจารย์ตรวจงาน
+            renderMain();
+            lucide.createIcons();
+          }
+        } else if (liveUser && liveUser.lastLoginTime && decoded.loginTime !== liveUser.lastLoginTime) {
+          // ถูกบังคับออกจากระบบเพราะมีการล็อกอินจากเครื่องอื่น
+          localStorage.removeItem(ACTIVE_SESSION_KEY);
+          currentUser = null;
+          initAppView();
+          alert('บัญชีของคุณถูกเข้าสู่ระบบจากอุปกรณ์อื่น ระบบได้ออกจากระบบเครื่องนี้โดยอัตโนมัติ');
         }
       } catch (e) {}
-      return null;
+    }
+
+    // เริ่มต้นเชื่อมต่อฐานข้อมูล
+    function initDatabaseConnection() {
+      const loader = document.getElementById('db-loading');
+      const statusDot = document.getElementById('db-status-dot');
+      const statusText = document.getElementById('db-status-text');
+
+      if (!isFirebaseConfigured) {
+        loader.classList.add('hidden');
+        statusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        statusText.textContent = 'โหมดออฟไลน์ (ยังไม่ได้ใส่ค่า Firebase Config)';
+        const localSaved = localStorage.getItem(LOCAL_FALLBACK_KEY);
+        parseFirebaseSnapshot(localSaved ? JSON.parse(localSaved) : defaultInitialData);
+        initAppView();
+        return;
+      }
+
+      // ฟังการเปลี่ยนแปลงข้อมูลแบบ Real-time จาก Firebase
+      db.ref('tasktrack_data').on('value', (snapshot) => {
+        loader.classList.add('hidden');
+        statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        statusText.textContent = 'เชื่อมต่อฐานข้อมูลออนไลน์สำเร็จ';
+
+        if (!snapshot.exists()) {
+          db.ref('tasktrack_data').set(defaultInitialData);
+        } else {
+          parseFirebaseSnapshot(snapshot.val());
+          if (!currentUser) initAppView();
+        }
+      }, (error) => {
+        loader.classList.add('hidden');
+        statusDot.className = 'w-2 h-2 rounded-full bg-rose-500';
+        statusText.textContent = 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาตรวจสอบ Config';
+        console.error(error);
+      });
+    }
+
+    // บันทึกข้อมูลขึ้น Firebase (หรือ LocalStorage หากยังไม่ตั้งค่า)
+    function saveToCloud(path, data) {
+      if (isFirebaseConfigured && db) {
+        return db.ref(`tasktrack_data/${path}`).set(data);
+      } else {
+        // Fallback Local
+        const raw = JSON.parse(localStorage.getItem(LOCAL_FALLBACK_KEY) || JSON.stringify(defaultInitialData));
+        const keys = path.split('/');
+        let curr = raw;
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!curr[keys[i]]) curr[keys[i]] = {};
+          curr = curr[keys[i]];
+        }
+        curr[keys[keys.length - 1]] = data;
+        localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(raw));
+        parseFirebaseSnapshot(raw);
+        return Promise.resolve();
+      }
+    }
+
+    function removeFromCloud(path) {
+      if (isFirebaseConfigured && db) {
+        return db.ref(`tasktrack_data/${path}`).remove();
+      } else {
+        const raw = JSON.parse(localStorage.getItem(LOCAL_FALLBACK_KEY) || JSON.stringify(defaultInitialData));
+        const keys = path.split('/');
+        let curr = raw;
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!curr[keys[i]]) return Promise.resolve();
+          curr = curr[keys[i]];
+        }
+        delete curr[keys[keys.length - 1]];
+        localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(raw));
+        parseFirebaseSnapshot(raw);
+        return Promise.resolve();
+      }
     }
 
     function saveSessionUser(user) {
@@ -514,9 +642,9 @@
       if (user) {
         const loginTime = Date.now();
         user.lastLoginTime = loginTime;
-        saveData();
         const token = btoa(JSON.stringify({ username: user.username, loginTime }));
         localStorage.setItem(ACTIVE_SESSION_KEY, token);
+        saveToCloud(`users/${user.username}/lastLoginTime`, loginTime);
       } else {
         localStorage.removeItem(ACTIVE_SESSION_KEY);
       }
@@ -534,8 +662,8 @@
     function readFileAsDataURL(file) {
       return new Promise((resolve) => {
         if (!file) { resolve(null); return; }
-        if (file.size > 3 * 1024 * 1024) {
-          alert(`ไฟล์ "${file.name}" มีขนาดเกิน 3 MB ระบบบันทึกเฉพาะชื่อไฟล์`);
+        if (file.size > 1.5 * 1024 * 1024) {
+          alert(`ไฟล์ "${file.name}" มีขนาดเกิน 1.5 MB แนะนำให้อัปโหลดลง Google Drive แล้วนำลิงก์มาวางแทนครับ`);
           resolve({ name: file.name, dataUrl: null });
           return;
         }
@@ -609,7 +737,6 @@
         btnAdmin.className = 'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 rounded-2xl border-2 border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold text-xs sm:text-sm transition-all';
         loginLabel.textContent = 'ชื่อผู้ดูแลระบบ (Admin Username)';
         document.getElementById('login-username').placeholder = 'admin';
-        document.getElementById('login-username').value = 'admin';
         tabReg.parentElement.style.display = 'none';
         if (authMode === 'register') switchAuthMode('login');
       }
@@ -639,7 +766,7 @@
 
     function handleRegister(e) {
       e.preventDefault();
-      const username = document.getElementById('reg-username').value.trim();
+      const username = document.getElementById('reg-username').value.trim().replace(/[.#$\[\]]/g, '_');
       const password = document.getElementById('reg-password').value.trim();
       const name = document.getElementById('reg-fullname').value.trim();
       const room = document.getElementById('reg-room').value.trim() || 'ม.5/1';
@@ -652,14 +779,13 @@
         return;
       }
 
-      let newUser = { username, password, role: 'student', name, room, number };
-      appData.users.push(newUser);
-      if (!appData.privateChats[username]) appData.privateChats[username] = [];
-      saveData();
-      saveSessionUser(newUser);
-      currentTab = 'dashboard';
-      initAppView();
-      showToast('ลงทะเบียนสำเร็จ (พร้อมรองรับกว่า 50 คน)');
+      let newUser = { username, password, role: 'student', name, room, number, lastLoginTime: Date.now() };
+      saveToCloud(`users/${username}`, newUser).then(() => {
+        saveSessionUser(newUser);
+        currentTab = 'dashboard';
+        initAppView();
+        showToast('ลงทะเบียนและบันทึกขึ้นฐานข้อมูลสำเร็จ');
+      });
     }
 
     function handleLogout() {
@@ -801,7 +927,7 @@
               <i data-lucide="sparkles" class="w-5 h-5 text-sky-500"></i>
               ภาพรวมของฉัน
             </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ยินดีต้อนรับ ${currentUser.name} • แยกตามรายวิชาและวันที่เพื่อความสะดวก</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ยินดีต้อนรับ ${currentUser.name} • ข้อมูลซิงค์ออนไลน์อัตโนมัติ</p>
           </div>
           <button onclick="setTab('assignments')" class="gradient-brand text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-md shadow-sky-500/20 hover:opacity-95 flex items-center gap-1.5">
             <i data-lucide="clipboard-list" class="w-4 h-4"></i>
@@ -809,7 +935,6 @@
           </button>
         </div>
 
-        <!-- 4 Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div class="bg-white dark:bg-slate-800 p-3.5 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
             <div>
@@ -882,7 +1007,6 @@
         const overdue = isAssignmentOverdue(asg);
         const allowLate = asg.allowLate !== false;
 
-        let statusKey = 'pending';
         let badgeHtml = '';
         let actionHtml = '';
 
@@ -898,11 +1022,9 @@
 
         if (sub) {
           if (sub.status === 'graded') {
-            statusKey = 'graded';
             badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">ตรวจแล้ว (${sub.score}/${asg.maxScore})</span>`;
             actionHtml = `<button onclick="alert('คะแนนที่ได้: ${sub.score}/${asg.maxScore}\\nFeedback จากอาจารย์: ${sub.feedback}')" class="bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 text-xs font-medium px-3.5 py-1.5 rounded-lg">ดูผลคะแนน</button>`;
           } else {
-            statusKey = 'submitted';
             const lateBadge = sub.isLate ? `<span class="text-[10px] text-amber-600 block mt-0.5">(ส่งล่าช้า)</span>` : '';
             badgeHtml = `<div><span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">ส่งแล้ว (รอตรวจ)</span>${lateBadge}</div>`;
             if (overdue && !allowLate) {
@@ -966,7 +1088,6 @@
               </div>
             </div>
 
-            <!-- Filter Controls Bar -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
               <div>
                 <label class="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1">กรองตามรายวิชา</label>
@@ -1155,7 +1276,8 @@
       const students = appData.users.filter(u => u.role === 'student');
 
       if (!isTeacherMode) {
-        const myThread = appData.privateChats[currentUser.username] || [];
+        const myThreadObj = appData.privateChats[currentUser.username] || {};
+        const myThread = Object.values(myThreadObj);
         return `
           <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-[540px]">
             <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/60 dark:bg-slate-950/40">
@@ -1164,7 +1286,7 @@
                 <div>
                   <h3 class="font-semibold text-slate-800 dark:text-white text-sm">แชตส่วนตัวกับอาจารย์ผู้สอน</h3>
                   <p class="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ปลอดภัยและเป็นส่วนตัว 1:1
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ส่งข้อความถึงอาจารย์แบบเรียลไทม์
                   </p>
                 </div>
               </div>
@@ -1202,7 +1324,8 @@
       }
 
       const activeStudent = students.find(s => s.username === selectedChatStudent) || students[0];
-      const thread = activeStudent ? (appData.privateChats[activeStudent.username] || []) : [];
+      const threadObj = activeStudent ? (appData.privateChats[activeStudent.username] || {}) : {};
+      const thread = Object.values(threadObj);
 
       return `
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 h-[560px]">
@@ -1217,7 +1340,7 @@
             <div class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
               ${students.length === 0 ? `<div class="p-6 text-center text-xs text-slate-400">ยังไม่มีนักเรียนลงทะเบียน</div>` : ''}
               ${students.map(stu => {
-                const stuMsgs = appData.privateChats[stu.username] || [];
+                const stuMsgs = Object.values(appData.privateChats[stu.username] || {});
                 const lastMsg = stuMsgs.length > 0 ? stuMsgs[stuMsgs.length - 1].text : 'ยังไม่มีข้อความ';
                 const isSelected = activeStudent && stu.username === activeStudent.username;
                 return `
@@ -1303,21 +1426,13 @@
       const gradedCount = appData.submissions.filter(s => s.status === 'graded').length;
       const pendingGrade = totalSubs - gradedCount;
       const submitRate = totalExpected ? Math.round((totalSubs / totalExpected) * 100) : 0;
-      const gradedRate = totalSubs ? Math.round((gradedCount / totalSubs) * 100) : 0;
-
-      const circles = [
-        { label: 'อัตราการส่งงาน', pct: submitRate, color: '#0ea5e9' },
-        { label: 'ตรวจแล้วทั้งหมด', pct: gradedRate, color: '#14b8a6' },
-        { label: 'ส่งตรงเวลา', pct: totalSubs ? Math.round((appData.submissions.filter(s => !s.isLate).length / totalSubs) * 100) : 0, color: '#10b981' },
-        { label: 'นักเรียนลงทะเบียน', pct: students.length > 0 ? 100 : 0, color: '#f59e0b' }
-      ];
 
       return `
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
               <i data-lucide="bar-chart-3" class="w-5 h-5 text-teal-600"></i>
-              ภาพรวมการตรวจงาน (รองรับนักเรียน 50+ คน)
+              ภาพรวมการตรวจงาน (Cloud Real-time)
             </h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">สรุปสถานะการส่งงานของนักเรียนทั้งหมด ${students.length} คน</p>
           </div>
@@ -1419,7 +1534,6 @@
             <div class="divide-y divide-slate-100 dark:divide-slate-700">
               ${appData.assignments.length === 0 ? `<div class="p-10 text-center text-sm text-slate-400">ยังไม่มีรายการงานที่มอบหมาย</div>` : ''}
               ${appData.assignments.map(a => {
-                const allowLate = a.allowLate !== false;
                 return `
                   <div class="p-4 flex flex-wrap items-center justify-between gap-4 hover:bg-slate-50/70 dark:hover:bg-slate-700/40 transition-colors">
                     <div class="space-y-1">
@@ -1492,7 +1606,7 @@
                       <td class="py-3.5 px-4 text-xs">
                         ${sub.fileDataUrl
                           ? `<a href="${sub.fileDataUrl}" download="${sub.fileName}" class="text-sky-700 dark:text-sky-300 font-semibold underline inline-flex items-center gap-1 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-800"><i data-lucide="download" class="w-3.5 h-3.5"></i> ดาวน์โหลด (${sub.fileName})</a>`
-                          : `<div class="text-slate-600 dark:text-slate-400 font-medium">${sub.fileName || 'ไม่มีไฟล์แนบ'}</div>`
+                          : (sub.link ? `<a href="${sub.link}" target="_blank" class="text-teal-600 underline font-medium">เปิดลิงก์งาน</a>` : `<div class="text-slate-600 dark:text-slate-400 font-medium">${sub.fileName || 'ไม่มีไฟล์แนบ'}</div>`)
                         }
                       </td>
                       <td class="py-3.5 px-4">
@@ -1585,12 +1699,11 @@
 
     function handleDeleteStudent(username) {
       if (!confirm(`ยืนยันการลบบัญชีนักเรียนรหัส "${username}" ใช่หรือไม่?`)) return;
-      appData.users = appData.users.filter(u => u.username !== username);
-      appData.submissions = appData.submissions.filter(s => s.studentUsername !== username);
-      delete appData.privateChats[username];
-      saveData();
-      renderMain();
-      lucide.createIcons();
+      removeFromCloud(`users/${username}`);
+      removeFromCloud(`privateChats/${username}`);
+      appData.submissions.filter(s => s.studentUsername === username).forEach(s => {
+        removeFromCloud(`submissions/${s.id}`);
+      });
       showToast('ลบบัญชีนักเรียนเรียบร้อยแล้ว');
     }
 
@@ -1633,20 +1746,15 @@
               <div>
                 <h2 class="font-bold text-slate-800 dark:text-white text-base flex items-center gap-2 mb-1">
                   <i data-lucide="database-backup" class="w-5 h-5 text-teal-600"></i>
-                  สำรองและกู้คืนข้อมูลทั้งระบบ (Backup & Restore)
+                  สำรองข้อมูลทั้งระบบ (Export JSON)
                 </h2>
-                <p class="text-xs text-slate-400">ส่งออกข้อมูลนักเรียน การบ้าน และคะแนน เป็นไฟล์ .json</p>
+                <p class="text-xs text-slate-400">ดาวน์โหลดสำเนาข้อมูลนักเรียน การบ้าน และคะแนน เก็บไว้ในเครื่องคอมพิวเตอร์</p>
               </div>
               <div class="flex flex-wrap gap-3 pt-1">
                 <button type="button" onclick="handleExportBackup()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2">
                   <i data-lucide="download" class="w-4 h-4"></i>
                   <span>ดาวน์โหลดไฟล์สำรองข้อมูล (.json)</span>
                 </button>
-                <label class="cursor-pointer bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2">
-                  <i data-lucide="upload" class="w-4 h-4"></i>
-                  <span>นำเข้าไฟล์สำรองข้อมูล</span>
-                  <input type="file" accept=".json" class="hidden" onchange="handleImportBackup(event)" />
-                </label>
               </div>
             </div>
           ` : ''}
@@ -1662,16 +1770,14 @@
 
       if (oldPass !== currentUser.password) { alert('รหัสผ่านเดิมไม่ถูกต้อง'); return; }
       if (newPass !== confirmPass) { alert('รหัสผ่านใหม่ไม่ตรงกัน'); return; }
-      const userObj = appData.users.find(u => u.username === currentUser.username);
-      if (userObj) {
-        userObj.password = newPass;
+      
+      saveToCloud(`users/${currentUser.username}/password`, newPass).then(() => {
         currentUser.password = newPass;
-        saveData();
         document.getElementById('old-pass').value = '';
         document.getElementById('new-pass').value = '';
         document.getElementById('confirm-pass').value = '';
         showToast('เปลี่ยนรหัสผ่านสำเร็จ!');
-      }
+      });
     }
 
     function handleExportBackup() {
@@ -1680,33 +1786,14 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `TaskTrack_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `Student_CloudBackup_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast('ดาวน์โหลดไฟล์สำรองเรียบร้อย');
     }
 
-    function handleImportBackup(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const imported = JSON.parse(reader.result);
-          if (imported && Array.isArray(imported.users)) {
-            appData = imported;
-            saveData();
-            showToast('กู้คืนข้อมูลสำเร็จ!');
-            initAppView();
-          } else { alert('รูปแบบไฟล์ไม่ถูกต้อง'); }
-        } catch (err) { alert('ไม่สามารถอ่านไฟล์ได้'); }
-      };
-      reader.readAsText(file);
-    }
-
     function renderReportView() {
       const students = appData.users.filter(u => u.role === 'student');
-      const totalMax = appData.assignments.reduce((sum, a) => sum + Number(a.maxScore), 0);
 
       return `
         <div class="space-y-4">
@@ -1724,7 +1811,7 @@
           <div id="printable-report" class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6 text-slate-800">
             <div class="text-center border-b border-slate-200 pb-5">
               <h1 class="text-lg font-bold">แบบรายงานสรุปผลการส่งงานนักเรียน</h1>
-              <p class="text-xs text-slate-500 mt-1">Student Portal (รองรับนักเรียน 50+ คน)</p>
+              <p class="text-xs text-slate-500 mt-1">Student Portal (Cloud Sync)</p>
             </div>
             <table class="w-full text-left border-collapse border border-slate-300 text-xs">
               <thead>
@@ -1760,6 +1847,7 @@
     }
 
     function renderMain() {
+      if (!currentUser) return;
       const ws = document.getElementById('main-workspace');
       const isAdmin = currentUser.role === 'admin';
       const effectiveRole = isAdmin ? adminViewMode : currentUser.role;
@@ -1834,9 +1922,9 @@
       const now = new Date();
       const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-      const idx = appData.submissions.findIndex(s => s.assignmentId === asgId && s.studentUsername === currentUser.username);
+      const subId = existing ? existing.id : `SUB_${asgId}_${currentUser.username}`;
       const payload = {
-        id: idx >= 0 ? appData.submissions[idx].id : 'SUB-' + Date.now(),
+        id: subId,
         assignmentId: asgId,
         studentUsername: currentUser.username,
         submittedAt: timestamp,
@@ -1850,14 +1938,10 @@
         feedback: ''
       };
 
-      if (idx >= 0) appData.submissions[idx] = payload;
-      else appData.submissions.push(payload);
-
-      saveData();
-      closeModal('submit-modal');
-      renderMain();
-      lucide.createIcons();
-      showToast('ส่งงานสำเร็จเรียบร้อย');
+      saveToCloud(`submissions/${subId}`, payload).then(() => {
+        closeModal('submit-modal');
+        showToast('ส่งงานขึ้นฐานข้อมูลสำเร็จเรียบร้อย');
+      });
     }
 
     function openGradeModal(subId) {
@@ -1887,24 +1971,22 @@
 
       const sub = appData.submissions.find(s => s.id === subId);
       if (sub) {
-        sub.status = 'graded';
-        sub.score = score;
-        sub.feedback = feedback;
+        const updated = { ...sub, status: 'graded', score, feedback };
+        saveToCloud(`submissions/${subId}`, updated).then(() => {
+          closeModal('grade-modal');
+          showToast('บันทึกคะแนนขึ้นฐานข้อมูลสำเร็จ');
+        });
       }
-      saveData();
-      closeModal('grade-modal');
-      renderMain();
-      lucide.createIcons();
-      showToast('บันทึกคะแนนสำเร็จ');
     }
 
     async function handleCreateAssignment(e) {
       e.preventDefault();
       const fileInput = document.getElementById('new-asg-file');
       const fileObj = fileInput.files && fileInput.files[0] ? await readFileAsDataURL(fileInput.files[0]) : null;
+      const asgId = 'ASG_' + Date.now();
 
       const newAsg = {
-        id: 'ASG-' + String(Date.now()).slice(-4),
+        id: asgId,
         title: document.getElementById('new-asg-title').value.trim(),
         subject: document.getElementById('new-asg-subject').value.trim(),
         maxScore: Number(document.getElementById('new-asg-score').value),
@@ -1916,20 +1998,17 @@
         attachmentLink: document.getElementById('new-asg-link').value.trim(),
         description: document.getElementById('new-asg-desc').value.trim() || 'ตามคำชี้แจง'
       };
-      appData.assignments.push(newAsg);
-      saveData();
-      renderMain();
-      lucide.createIcons();
-      showToast('มอบหมายงานสำเร็จ');
+      saveToCloud(`assignments/${asgId}`, newAsg).then(() => {
+        showToast('มอบหมายงานขึ้นฐานข้อมูลสำเร็จ');
+      });
     }
 
     function handleDeleteAssignment(asgId) {
       if (!confirm('ยืนยันลบงานนี้?')) return;
-      appData.assignments = appData.assignments.filter(a => a.id !== asgId);
-      appData.submissions = appData.submissions.filter(s => s.assignmentId !== asgId);
-      saveData();
-      renderMain();
-      lucide.createIcons();
+      removeFromCloud(`assignments/${asgId}`);
+      appData.submissions.filter(s => s.assignmentId === asgId).forEach(s => {
+        removeFromCloud(`submissions/${s.id}`);
+      });
       showToast('ลบงานเรียบร้อย');
     }
 
@@ -1939,22 +2018,20 @@
       const tag = document.getElementById('ann-tag').value;
       const content = document.getElementById('ann-content').value.trim();
       const now = new Date();
-      const dateStr = `${now.getDate()} ม.ค. ${now.getFullYear() + 543}`;
+      const dateStr = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear() + 543}`;
+      const annId = 'ANN_' + Date.now();
 
-      appData.announcements.unshift({ id: 'ANN-' + Date.now(), title, date: dateStr, author: currentUser.name, content, tag });
-      saveData();
-      renderMain();
-      lucide.createIcons();
-      showToast('ประกาศข่าวสารสำเร็จ');
+      const payload = { id: annId, title, date: dateStr, author: currentUser.name, content, tag, timestamp: Date.now() };
+      saveToCloud(`announcements/${annId}`, payload).then(() => {
+        showToast('ประกาศข่าวสารสำเร็จ');
+      });
     }
 
     function handleDeleteAnnouncement(annId) {
       if (!confirm('ยืนยันลบประกาศนี้?')) return;
-      appData.announcements = appData.announcements.filter(a => a.id !== annId);
-      saveData();
-      renderMain();
-      lucide.createIcons();
-      showToast('ลบประกาศเรียบร้อย');
+      removeFromCloud(`announcements/${annId}`).then(() => {
+        showToast('ลบประกาศเรียบร้อย');
+      });
     }
 
     function handleSendMessage(e) {
@@ -1968,21 +2045,20 @@
       const targetStudentId = effectiveRole === 'student' ? currentUser.username : selectedChatStudent;
       if (!targetStudentId) return;
 
-      if (!appData.privateChats[targetStudentId]) appData.privateChats[targetStudentId] = [];
-
       const now = new Date();
       const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      appData.privateChats[targetStudentId].push({ id: Date.now(), sender: effectiveRole, senderName: currentUser.name, text, time });
+      const msgId = 'MSG_' + Date.now();
+      const payload = { id: msgId, sender: effectiveRole, senderName: currentUser.name, text, time };
 
-      saveData();
-      renderMain();
-      lucide.createIcons();
-      const box = document.getElementById('chat-box');
-      if (box) box.scrollTop = box.scrollHeight;
+      input.value = '';
+      saveToCloud(`privateChats/${targetStudentId}/${msgId}`, payload).then(() => {
+        const box = document.getElementById('chat-box');
+        if (box) box.scrollTop = box.scrollHeight;
+      });
     }
 
-    // Boot App
-    initAppView();
+    // Boot Database & App
+    initDatabaseConnection();
   </script>
 </body>
 </html>
